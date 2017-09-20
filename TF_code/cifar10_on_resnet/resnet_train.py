@@ -198,7 +198,7 @@ def train(training_set, training_labels):
 
       print('Train Epoch: {} [{}/{} ({:.0f}%)], Train Loss: {}, Time Cost: {}'.format(
           epoch_counter, local_data_batch_idx, num_batches_per_epoch, 
-          (100. * (local_data_batch_idx * FLAGS.batch_size) / (FLAGS.batch_size*num_batch_per_epoch)), loss_value, 
+          (100. * (local_data_batch_idx * FLAGS.batch_size) / (FLAGS.batch_size*num_batches_per_epoch)), loss_value, 
           time.time()-start_time))
       #tf.logging.info("Data batch index: %s, Current epoch idex: %s" % (str(epoch_counter), str(local_data_batch_idx)))
       
