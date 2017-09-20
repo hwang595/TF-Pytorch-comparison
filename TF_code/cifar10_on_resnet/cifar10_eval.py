@@ -91,8 +91,8 @@ def do_eval(saver,
       if prev_global_step == global_step:
         return prev_global_step
 
-      print('Succesfully loaded model from %s at step=%s.' %
-            (ckpt.model_checkpoint_path, global_step))
+      #print('Succesfully loaded model from %s at step=%s.' %
+      #      (ckpt.model_checkpoint_path, global_step))
       sys.stdout.flush()
 
       # Compute accuracy
@@ -103,8 +103,8 @@ def do_eval(saver,
                                        labels_placeholder)
       acc, loss = sess.run([val_acc, val_loss], feed_dict=feed_dict)
 
-      print('Num examples: %d  Top-1-Error @ 1: %f Loss: %f Time: %f' %
-            (num_examples, acc, loss, time.time() - start_time))
+      print('Step: %d  Num examples: %d  Top-1-Error @ 1: %f Loss: %f Time: %f' %
+            (global_step, num_examples, acc, loss, time.time() - start_time))
       sys.stdout.flush()
 
       # Summarize accuracy
