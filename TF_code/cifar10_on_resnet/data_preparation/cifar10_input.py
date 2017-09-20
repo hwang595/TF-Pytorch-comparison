@@ -293,14 +293,12 @@ def prepare_train_data(padding_size):
     for i in range(1, NUM_TRAIN_BATCH+1):
         path_list.append(full_data_dir + str(i))
     data, label = read_in_all_images(path_list, is_random_label=TRAIN_RANDOM_LABEL)
-    data = whitening_image(data)
+    # remove whitening here
+    #data = whitening_image(data)
     pad_width = ((0, 0), (padding_size, padding_size), (padding_size, padding_size), (0, 0))
     data = np.pad(data, pad_width=pad_width, mode='constant', constant_values=0)
 
-    #train_set_new, train_labels_new = aug_data_set(data, label, times_expand=1, aug_type='crop')
-
     return data, label
-#    return sampled_train_images, sampled_train_labels
 
 def read_validation_data():
     '''
@@ -309,7 +307,8 @@ def read_validation_data():
     '''
     validation_array, validation_labels = read_in_all_images([vali_dir],
                                                        is_random_label=VALI_RANDOM_LABEL)
-    validation_array = whitening_image(validation_array)
+    # remove whitening here:
+    #validation_array = whitening_image(validation_array)
 
     return validation_array, validation_labels
 
@@ -393,10 +392,9 @@ def generate_augment_train_batch(train_data, train_labels, train_batch_size, loc
       assert train_batch_size <= num_of_instances
     end = local_data_batch_idx
     train_batch_tmp = train_data[start:end]
-#    train_batch = whitening_image(random_crop_and_flip(train_batch_tmp, padding_size=FLAGS.padding_size))
-    train_batch = whitening_image(train_batch_tmp)
+    # TODO(hwang): if remove whitening here not working, please figure out how to implement the samme
+    # whitening strategy in pytorch
+    train_batch = train_batch_tmp
     batch_labels = train_labels[start:end]
-#    tf.logging.info("Batch shapes %s" % str(train_batch.shape))
-#    tf.logging.info("Standardized batch shapes %s" % str(whitening_image(train_batch).shape))
     # Most of the time return the non distorted image
     return train_batch, batch_labels, local_data_batch_idx, epoch_counter

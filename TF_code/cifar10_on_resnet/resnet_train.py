@@ -115,12 +115,10 @@ def train(training_set, training_labels):
     global_step = tf.Variable(0, name="global_step", trainable=False)
     
     # get num of examples in training set
-#    dataset_num_examples = training_set.shape[0]
+    dataset_num_examples = training_set.shape[0]
 
     # Calculate the learning rate schedule.
-#    num_batches_per_epoch = (dataset_num_examples / FLAGS.batch_size)
-
-#    decay_steps = int(num_batches_per_epoch * FLAGS.num_epochs_per_decay)
+    num_batches_per_epoch = (dataset_num_examples / FLAGS.batch_size)
 
     # Decay the learning rate exponentially based on the number of steps.
     '''
@@ -197,15 +195,16 @@ def train(training_set, training_labels):
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
       examples_per_sec = FLAGS.batch_size / float(duration)
-      format_str = ('%s: step %d, loss = %.8f (%.1f examples/sec; %.3f '
-                    'sec/batch); acc=%.4f')
-      tf.logging.info(format_str % (datetime.now(), step, loss_value,
-                          examples_per_sec, duration, acc))
-      tf.logging.info("Data batch index: %s, Current epoch idex: %s" % (str(epoch_counter), str(local_data_batch_idx)))
+
+      print('Train Epoch: {} [{}/{} ({:.0f}%)], Train Loss: {}, Time Cost: {}'.format(
+          epoch_counter, local_data_batch_idx, num_batches_per_epoch, 
+          (100. * (local_data_batch_idx * FLAGS.batch_size) / (FLAGS.batch_size*num_batch_per_epoch)), loss_value, 
+          time.time()-start_time))
+      #tf.logging.info("Data batch index: %s, Current epoch idex: %s" % (str(epoch_counter), str(local_data_batch_idx)))
       
       if step == FLAGS.decay_step0 or step == FLAGS.decay_step1:
         FLAGS.init_lr = 0.1 * FLAGS.init_lr
 
-      if step % 2000 == 0 or (step + 1) == FLAGS.max_steps:
+      if step % 195 == 0 or (step + 1) == FLAGS.max_steps:
         checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)
