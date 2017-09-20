@@ -118,7 +118,7 @@ def train(training_set, training_labels):
     dataset_num_examples = training_set.shape[0]
 
     # Calculate the learning rate schedule.
-    num_batches_per_epoch = (dataset_num_examples / FLAGS.batch_size)
+    num_batches_per_epoch = int(dataset_num_examples / FLAGS.batch_size)
 
     # Decay the learning rate exponentially based on the number of steps.
     '''
@@ -172,6 +172,7 @@ def train(training_set, training_labels):
     # these two parameters is used to measure when to enter next epoch
     local_data_batch_idx = 0
     epoch_counter = 0
+    batch_counter = 0
 
     # Start the queue runners.
     tf.train.start_queue_runners(sess=sess)
@@ -187,6 +188,11 @@ def train(training_set, training_labels):
                 epoch_counter,
                 FLAGS.init_lr, lr_placeholder)
 
+      batch_counter += 1
+
+      if batch_counter > num_batches_per_epoch:
+        batch_counter = 0
+
       start_time = time.time()
       _, loss_value, acc = sess.run([train_op, total_loss, validation_accuracy], feed_dict=feed_dict)
 
@@ -197,8 +203,8 @@ def train(training_set, training_labels):
       examples_per_sec = FLAGS.batch_size / float(duration)
 
       print('Train Epoch: {} [{}/{} ({:.0f}%)], Train Loss: {}, Time Cost: {}'.format(
-          epoch_counter, local_data_batch_idx, num_batches_per_epoch, 
-          (100. * (local_data_batch_idx * FLAGS.batch_size) / (FLAGS.batch_size*num_batches_per_epoch)), loss_value, 
+          epoch_counter, batch_counter, num_batches_per_epoch, 
+          (100. * (batch_counter * FLAGS.batch_size) / (FLAGS.batch_size*num_batches_per_epoch)), loss_value, 
           time.time()-start_time))
       #tf.logging.info("Data batch index: %s, Current epoch idex: %s" % (str(epoch_counter), str(local_data_batch_idx)))
       
