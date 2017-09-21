@@ -109,7 +109,7 @@ class ResNet_Learner:
 
 
     def build_model(self):
-        self.network = resnet20()
+        self.network = resnet32()
 
         # only for test use
         self.module = self.network
@@ -183,7 +183,7 @@ class ResNet_Learner:
             prec1 = accuracy(logits_collector, labels_colloector)
 
             print('Epoch: %s  Step: %d  Top-1-Error @ 1: %f Loss: %f Time: %f' %
-                (str(i), i*len(train_loader), (100.0-prec1[0].numpy()[0])/100.0, test_loss, (time.time()-epoch_start_time)))
+                (str(i), i*len(train_loader), (100.0-prec1[0].cpu().numpy()[0])/100.0, test_loss, (time.time()-epoch_start_time)))
 
 
 if __name__ == "__main__":
