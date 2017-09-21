@@ -84,6 +84,7 @@ def add_fit_args(parser):
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
+    parser.add_argument('--enable-gpu', type=bool, default=False, help='using GPU or CPU')
     args = parser.parse_args()
     return args
 
@@ -102,7 +103,10 @@ class ResNet_Learner:
         self._step_fetch_request = False
         self.max_num_epochs = args.epochs
         self.lr = args.lr
+        # using GPU or CPU
+        self.enable_gpu = args.enable_gpu
         self.momentum = args.momentum
+
 
     def build_model(self):
         self.network = resnet20()
@@ -115,53 +119,29 @@ class ResNet_Learner:
         # this is only used for test
         self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.lr, momentum=self.momentum)
 
-    def test_model(self):
-        '''this is only for test, please don't call this function'''
-        from copy import deepcopy
-        self._module_copies = [deepcopy(self.module)]
-        self.device_ids = []
-
-        t = None
-        for p in self.module.parameters():
-            tp = type(p.data)
-            if t is not None and t is not tp:
-                raise ValueError("DistributedDataParallel requires all parameters' data to be of the same type")
-            t = tp
-
-        self.bucket_sizes = []
-        self.bucket_map = {}
-        MB = 1024 * 1024
-        self.broadcast_bucket_size = 10 * MB  # used for param sync before forward
-        bucket_bytes_cap = 1 * MB
-        bucket_bytes = bucket_bytes_cap  # to init the first bucket immediately
-        for param_tuple in zip(*map(lambda m: m.parameters(), self._module_copies)):
-            if bucket_bytes >= bucket_bytes_cap:
-                self.bucket_sizes.append(0)
-                bucket_bytes = 0
-            self.bucket_sizes[-1] += 1
-            for p in param_tuple:
-                self.bucket_map[p] = len(self.bucket_sizes) - 1
-            bucket_bytes += p.numel() * p.element_size()
-
-        self.buckets = [[[] for _ in range(len(self.device_ids))] for _ in range(len(self.bucket_sizes))]
-        self.bucket_events = [[None] * len(self.device_ids) for _ in range(len(self.bucket_sizes))]
-        self.reduced = [False] * len(self.bucket_sizes)
-
     def train_and_test(self, train_loader=None, test_loader=None):
         # iterate of epochs
         for i in range(self.max_num_epochs):
             self.network.train()
             epoch_start_time = time.time()
             batch_counter = 0
-            for batch_idx, (train_images, train_labels) in enumerate(train_loader):
+            for batch_idx, (train_images, y_batch) in enumerate(train_loader):
                 batch_counter += len(train_images)
                 iteration_start_time = time.time()
                 self._iteration_counter += 1
 
-                train_images, train_labels = Variable(train_images), Variable(train_labels)
+                if self.enable_gpu:
+                    train_images = Variable(train_images.cuda())
+                    train_labels = Variable(y_batch.cuda())
+                else: 
+                    train_images = Variable(train_images)
+                    train_labels = Variable(y_batch)
+
                 self.optimizer.zero_grad()
+
                 logits = self.network(train_images)
                 loss = self.criterion(logits, train_labels)
+                
                 loss.backward()
                 #backward(loss)
 
@@ -183,7 +163,13 @@ class ResNet_Learner:
             #logits_collector = []
             #labels_colloector = []
             for test_batch_idx, (test_images, test_labels) in enumerate(test_loader):
-                test_images, test_labels = Variable(test_images, volatile=True), Variable(test_labels)
+                if self.enable_gpu:
+                    test_images = Variable(test_images.cuda(), volatile=True)
+                    test_labels = Variable(test_labels.cuda(), volatile=True)
+                else:
+                    test_images = Variable(test_images, volatile=True)
+                    test_labels = Variable(test_labels, volatile=True)
+
                 test_logits = self.network(test_images)
 
                 if test_batch_idx == 0:
@@ -203,22 +189,28 @@ class ResNet_Learner:
 if __name__ == "__main__":
     args = add_fit_args(argparse.ArgumentParser(description='PyTorch MNIST Example'))
 
+    '''
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    '''
 
     # load training and test set here:
     trainset = datasets.CIFAR10(root='./data', train=True,
-                                            download=True, transform=transform)
+                                            download=True, transform=transforms.ToTensor())
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
                                               shuffle=True)
 
     testset = datasets.CIFAR10(root='./data', train=False,
-                                           download=True, transform=transform)
+                                           download=True, transform=transforms.ToTensor())
 
     test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size,
                                              shuffle=False)
 
-    dist_worker = ResNet_Learner(rank=0, world_size=1, args=args)
-    dist_worker.build_model()
-    dist_worker.train_and_test(train_loader=train_loader, test_loader=test_loader)
+    resnet_learner = ResNet_Learner(rank=0, world_size=1, args=args)
+    resnet_learner.build_model()
+
+    if args.enable_gpu:
+        resnet_learner.network.cuda()
+
+    resnet_learner.train_and_test(train_loader=train_loader, test_loader=test_loader)
