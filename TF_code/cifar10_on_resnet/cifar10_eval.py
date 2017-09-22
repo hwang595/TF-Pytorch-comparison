@@ -103,7 +103,7 @@ def do_eval(saver,
                                        labels_placeholder)
       acc, loss = sess.run([val_acc, val_loss], feed_dict=feed_dict)
 
-      print('Step: %d  Num examples: %d  Top-1-Error @ 1: %f Loss: %f Time: %f' %
+      print('Step: %d, Num examples: %d, Top-1-Error @ 1: %f, Loss: %f, Time: %f' %
             (global_step, num_examples, acc, loss, time.time() - start_time))
       sys.stdout.flush()
 

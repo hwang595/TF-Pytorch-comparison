@@ -202,10 +202,10 @@ def train(training_set, training_labels):
 
       examples_per_sec = FLAGS.batch_size / float(duration)
 
-      print('Train Epoch: {} [{}/{} ({:.0f}%)], Train Loss: {}, Time Cost: {}'.format(
+      print('Train Epoch: {} [{}/{} ({:.0f}%)], Train Loss: {}, Time Cost: {}, Train Acc'.format(
           epoch_counter, batch_counter, num_batches_per_epoch, 
           (100. * (batch_counter * FLAGS.batch_size) / (FLAGS.batch_size*num_batches_per_epoch)), loss_value, 
-          time.time()-start_time))
+          time.time()-start_time, acc))
       #tf.logging.info("Data batch index: %s, Current epoch idex: %s" % (str(epoch_counter), str(local_data_batch_idx)))
       
       if step == FLAGS.decay_step0 or step == FLAGS.decay_step1:
