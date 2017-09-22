@@ -109,7 +109,7 @@ class ResNet_Learner:
 
 
     def build_model(self):
-        self.network = resnet32()
+        self.network = resnet20()
 
         # only for test use
         self.module = self.network
@@ -141,17 +141,17 @@ class ResNet_Learner:
 
                 logits = self.network(train_images)
                 loss = self.criterion(logits, train_labels)
+                prec1_train = accuracy(logits.data, y_batch)
                 
                 loss.backward()
-                #backward(loss)
 
                 self.optimizer.step()
 
                 # load the training info
-                print('Train Epoch: {} [{}/{} ({:.0f}%)], Train Loss: {}, Time Cost: {}'.format(
+                print('Train Epoch: {} [{}/{} ({:.0f}%)], Train Loss: {}, Time Cost: {}, Train Acc: {}'.format(
                        i, batch_counter, len(train_loader.dataset), 
                       100. * batch_idx / len(train_loader), loss.data[0], 
-                      time.time()-iteration_start_time))
+                      time.time()-iteration_start_time, prec1_train[0].numpy()[0]/100.0))
                 
                 if self._iteration_counter == 40000 or self._iteration_counter == 60000:
                     naive_lr_scheduler(optimizer=self.optimizer)
@@ -182,7 +182,7 @@ class ResNet_Learner:
 
             prec1 = accuracy(logits_collector, labels_colloector)
 
-            print('Epoch: %s  Step: %d  Top-1-Error @ 1: %f Loss: %f Time: %f' %
+            print('Epoch: %s, Step: %d, Top-1-Error @ 1: %f, Loss: %f, Time: %f' %
                 (str(i), i*len(train_loader), (100.0-prec1[0].cpu().numpy()[0])/100.0, test_loss, (time.time()-epoch_start_time)))
 
 
