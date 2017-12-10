@@ -109,7 +109,7 @@ class ResNet_Learner:
 
 
     def build_model(self):
-        self.network = resnet32()
+        self.network = ResNet18()
 
         # only for test use
         self.module = self.network
