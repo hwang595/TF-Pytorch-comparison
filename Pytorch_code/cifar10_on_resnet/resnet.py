@@ -9,7 +9,7 @@ class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1):
-        super().__init__()
+        super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, 3, stride=stride, padding=1,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -212,7 +212,7 @@ class ResNet(nn.Module):
 
     def __init__(self, Block, layers, filters, num_classes=10, inplanes=None):
         self.inplanes = inplanes or filters[0]
-        super().__init__()
+        super(ResNet, self).__init__()
 
         self.pre_act = 'Pre' in Block.__name__
 
@@ -231,7 +231,7 @@ class ResNet(nn.Module):
                 section.append(Block(self.inplanes, planes, stride=stride))
                 self.inplanes = planes * Block.expansion
             section = nn.Sequential(*section)
-            setattr(self, f'section_{section_index}', section)
+            setattr(self, 'section_{}'.format(str(section_index)), section)
 
         if self.pre_act:
             self.bn1 = nn.BatchNorm2d(self.inplanes)
@@ -254,7 +254,7 @@ class ResNet(nn.Module):
             H = F.relu(H)
 
         for section_index in range(self.num_sections):
-            H = getattr(self, f'section_{section_index}')(H)
+            H = getattr(self, 'section_{}'.format(str(section_index)))(H)
 
         if self.pre_act:
             H = self.bn1(H)
