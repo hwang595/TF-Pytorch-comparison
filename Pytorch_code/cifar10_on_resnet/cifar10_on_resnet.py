@@ -207,15 +207,34 @@ if __name__ == "__main__":
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     '''
+    normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
+                                 std=[x/255.0 for x in [63.0, 62.1, 66.7]])
+    # data prep for training set
+    transform_train = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Lambda(lambda x: F.pad(
+                            Variable(x.unsqueeze(0), requires_grad=False, volatile=True),
+                            (4,4,4,4),mode='reflect').data.squeeze()),
+        transforms.ToPILImage(),
+        transforms.RandomCrop(32),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        normalize,
+        ])
+    # data prep for test set
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        normalize
+        ])
 
     # load training and test set here:
     trainset = datasets.CIFAR10(root='./data', train=True,
-                                            download=True, transform=transforms.ToTensor())
+                                            download=True, transform=transform_train)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
                                               shuffle=True)
 
     testset = datasets.CIFAR10(root='./data', train=False,
-                                           download=True, transform=transforms.ToTensor())
+                                           download=True, transform=transform_test)
 
     test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size,
                                              shuffle=False)
