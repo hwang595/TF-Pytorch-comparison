@@ -20,6 +20,7 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 
 from resnet import *
+from vgg import *
 
 '''this is a trial code, we use Cifar10 on ResNet-32 with batch normalization'''
 
@@ -109,7 +110,8 @@ class ResNet_Learner:
 
 
     def build_model(self):
-        self.network = ResNet18()
+        #self.network = ResNet18()
+        self.network=vgg19_bn()
 
         # only for test use
         self.module = self.network
