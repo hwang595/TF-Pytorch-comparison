@@ -3,10 +3,11 @@ import math
 import threading
 import argparse
 import time
+import pickle
 
 import torch
 from torch.autograd import Variable
-from torch._utils import _flatten_tensors, _unflatten_tensors
+#from torch._utils import _flatten_tensors, _unflatten_tensors
 from torch.cuda.comm import broadcast_coalesced
 from torch.cuda import nccl
 import torch.distributed as dist
@@ -21,6 +22,7 @@ from torchvision import datasets, transforms
 
 from resnet import *
 from vgg import *
+import numpy as np
 
 '''this is a trial code, we use Cifar10 on ResNet-32 with batch normalization'''
 
@@ -155,6 +157,12 @@ class ResNet_Learner:
                 
                 loss.backward()
 
+#                for p in self.network.parameters():
+#                    print(p.data.numpy().shape)
+#                exit()
+                if i in (0, 5, 10) and batch_idx == 0:
+                    self._save_grad(epoch=i)
+
                 self.optimizer.step()
 
                 # load the training info
@@ -170,8 +178,6 @@ class ResNet_Learner:
             self.network.eval()
             test_loss = 0
             # we use batched strategy and gather them together to avoid run out of memory issue
-            #logits_collector = []
-            #labels_colloector = []
             for test_batch_idx, (test_images, test_labels) in enumerate(test_loader):
                 if self.enable_gpu:
                     test_images = Variable(test_images.cuda(), volatile=True)
@@ -200,15 +206,16 @@ class ResNet_Learner:
             print('Epoch: %s, Step: %d, Top-1-Error @ 1: %f, Loss: %f, Time: %f' %
                 (str(i), i*len(train_loader), valid_acc, test_loss, (time.time()-epoch_start_time)))
 
+    def _save_grad(self, epoch):
+        print("==================>Dumping grad matrices at epoch: {}".format(epoch))
+        for i, param in enumerate(self.network.parameters()):
+            pkl_output = open('epoch-{}-layer-{}',format(epoch, i), 'wb')
+            pickle.dump(param.grad.cpu().data.numpy().astype(np.float64), pkl_output)
+
 
 if __name__ == "__main__":
     args = add_fit_args(argparse.ArgumentParser(description='PyTorch MNIST Example'))
 
-    '''
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    '''
     normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
                                  std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # data prep for training set
